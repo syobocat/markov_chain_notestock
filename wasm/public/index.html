@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>マルコフ連鎖 for Notestock</title>
+        <meta name="format-detection" content="telephone-no" />
+        <style>
+            body {
+                font-family: sans-serif;
+            }
+            h1 {
+                text-align: center;
+            }
+            input,
+            button,
+            textarea {
+                font-size: medium;
+            }
+            .instruction {
+                margin: 0 10vw;
+            }
+            .panel {
+                margin: 0 10vw;
+                padding: 1vw 10vw;
+                border: solid;
+
+                display: grid;
+                grid-template-columns: 50% 50%;
+            }
+            .panel > div {
+                padding: 2em 0;
+            }
+            .generate {
+                grid-column: 1 / 3;
+            }
+            #output {
+                margin: 1em 0 0;
+                resize: none;
+                width: 100%;
+            }
+            #output_details {
+                margin-top: 0;
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>マルコフ連鎖 for Notestock</h1>
+        <noscript>
+            <p>
+                <strong>You need to enable Javascript to use this tool.</strong>
+            </p>
+        </noscript>
+        <details class="instruction">
+            <summary>つかいかた</summary>
+            <ol>
+                <li>
+                    <a href="https://notestock.osa-p.net" , target="_blank"
+                        >Notestock</a
+                    >でログインする
+                </li>
+                <li>
+                    <a
+                        href="https://notestock.osa-p.net/setting/export.html"
+                        ,
+                        target="_blank"
+                        >エクスポート</a
+                    >機能からJSONで投稿データをエクスポートする
+                </li>
+                <li>
+                    ダウンロードした<code>.tar.zip</code>ファイルを「学習」欄に入れる
+                </li>
+                <li>いろんな文章を生成しよう！</li>
+            </ol>
+        </details>
+        <div class="panel">
+            <div class="learn">
+                <h2>学習</h2>
+                <input
+                    type="file"
+                    id="tarzip"
+                    class="file_select"
+                    accept="application/zip, application/x-zip-compressed"
+                    multiple
+                />
+            </div>
+            <div class="load">
+                <h2>モデル読み込み</h2>
+                <input type="file" id="model" class="file_select" />
+            </div>
+            <div>
+                <h2>モデルダウンロード</h2>
+                <button id="download" disabled>ダウンロード</button>
+            </div>
+            <div class="generate">
+                <h2>生成</h2>
+                <input
+                    type="text"
+                    id="start_with"
+                    placeholder="開始単語 (任意)"
+                />
+                <button id="generate" disabled>生成</button>
+                <div>
+                    <textarea id="output" rows="10" readonly></textarea>
+                    <p id="output_details"></p>
+                </div>
+            </div>
+        </div>
+        <script type="module">
+            import init, {
+                MarkovWasm,
+                set_starting_word,
+                generate,
+                download,
+                upload,
+            } from "./pkg/markov_chain_notestock_wasm.js";
+
+            const tarZip = document.getElementById("tarzip");
+            const model = document.getElementById("model");
+            const downloadButton = document.getElementById("download");
+            const generateButton = document.getElementById("generate");
+            const startWith = document.getElementById("start_with");
+            const output = document.getElementById("output");
+            const outputDetails = document.getElementById("output_details");
+
+            const initialized = false;
+
+            tarZip.addEventListener("change", async () => {
+                const markov = new MarkovWasm();
+                output.value = "処理中…";
+                for (let i = 0; i < tarZip.files.length; i++) {
+                    const array = await tarZip.files[i].bytes();
+                    if (!markov.learn(array)) {
+                        generateButton.disabled = true;
+                        downloadButton.disabled = true;
+                        output.value =
+                            "読み込みエラー！ファイルの内容を確認し、再度試してください。";
+                        return;
+                    }
+                }
+                markov.build();
+                generateButton.disabled = false;
+                downloadButton.disabled = false;
+                output.value = "モデルが作成されました。";
+            });
+
+            model.addEventListener("change", () => {
+                tarzip.files[0].bytes().then((array) => {
+                    if (upload(array)) {
+                        generateButton.disabled = false;
+                        downloadButton.disabled = false;
+                        output.value = "モデルが読み込まれました。";
+                    } else {
+                        generateButton.disabled = true;
+                        downloadButton.disabled = true;
+                        output.value =
+                            "読み込みエラー！ファイルの内容を確認し、再度試してください。";
+                    }
+                });
+            });
+
+            generateButton.addEventListener("click", () => {
+                if (!set_starting_word(startWith.value)) {
+                    output.value =
+                        "その単語はモデル上に存在しません。別の単語でお試しください。";
+                    return;
+                }
+                const tokens = generate();
+                output.value = tokens.join("");
+                outputDetails.innerHTML = "「" + tokens.join("」→「") + "」";
+            });
+
+            downloadButton.addEventListener("click", () => {
+                const bytes = download();
+                const blob = new Blob(bytes);
+                const url = window.URL.createObjectURL(blob);
+                Object.assign(document.createElement("a"), {
+                    href: url,
+                    download: "model.bin",
+                }).click();
+            });
+
+            async function Init() {
+                await init();
+            }
+            window.addEventListener("load", () => init());
+        </script>
+    </body>
+</html>
