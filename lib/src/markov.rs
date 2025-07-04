@@ -5,17 +5,17 @@ use bincode::{Decode, Encode};
 use lindera::{dictionary::DictionaryKind, mode::Mode, segmenter::Segmenter, tokenizer::Tokenizer};
 use rand::seq::IndexedRandom;
 
-pub struct Markov {
+pub struct MarkovBuilder {
     tokenizer: Tokenizer,
-    data: MarkovData,
+    model: MarkovModel,
 }
 
-pub struct MarkovModel {
+pub struct MarkovGenerator {
     current: Token,
-    data: Option<MarkovData>,
+    model: Option<MarkovModel>,
 }
 
-pub type MarkovData = HashMap<Token, HashMap<Token, u32>>;
+pub type MarkovModel = HashMap<Token, HashMap<Token, u32>>;
 
 #[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum Token {
@@ -24,26 +24,26 @@ pub enum Token {
     Eos,
 }
 
-impl Default for MarkovModel {
+impl Default for MarkovGenerator {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MarkovModel {
+impl MarkovGenerator {
     #[must_use]
     pub const fn new() -> Self {
         Self {
             current: Token::Bos,
-            data: None,
+            model: None,
         }
     }
 
     #[must_use]
-    pub const fn from_data(data: MarkovData) -> Self {
+    pub const fn from_model(model: MarkovModel) -> Self {
         Self {
             current: Token::Bos,
-            data: Some(data),
+            model: Some(model),
         }
     }
 
@@ -52,7 +52,7 @@ impl MarkovModel {
             .context("Failed to decode the file")?;
         Ok(Self {
             current: Token::Bos,
-            data: Some(data),
+            model: Some(data),
         })
     }
 
@@ -62,17 +62,17 @@ impl MarkovModel {
             .context("Failed to decode the file")?;
         Ok(Self {
             current: Token::Bos,
-            data: Some(data),
+            model: Some(data),
         })
     }
 
-    pub fn set_data(&mut self, data: MarkovData) {
-        self.data = Some(data);
+    pub fn set_model(&mut self, model: MarkovModel) {
+        self.model = Some(model);
     }
 
     #[must_use]
-    pub fn get_data(&self) -> Option<MarkovData> {
-        self.data.clone()
+    pub fn get_data(&self) -> Option<MarkovModel> {
+        self.model.clone()
     }
 
     pub fn set_start(&mut self, token: Option<String>) -> anyhow::Result<()> {
@@ -83,7 +83,7 @@ impl MarkovModel {
 
         let token = Token::Word(token);
         if !self
-            .data
+            .model
             .as_ref()
             .is_some_and(|data| data.contains_key(&token))
         {
@@ -93,8 +93,8 @@ impl MarkovModel {
         Ok(())
     }
 
-    pub fn generate_next(&mut self) -> anyhow::Result<Token> {
-        let Some(data) = self.data.as_ref() else {
+    fn generate_next(&mut self) -> anyhow::Result<Token> {
+        let Some(data) = self.model.as_ref() else {
             anyhow::bail!("The model is not initialized yet");
         };
         let Some(next_candidate) = data.get(&self.current) else {
@@ -124,7 +124,7 @@ impl MarkovModel {
     }
 }
 
-impl Markov {
+impl MarkovBuilder {
     pub fn new() -> anyhow::Result<Self> {
         #[cfg(feature = "unidic")]
         let dictionary_kind = DictionaryKind::UniDic;
@@ -142,7 +142,7 @@ impl Markov {
     pub fn from_tokenizer(tokenizer: Tokenizer) -> Self {
         Self {
             tokenizer,
-            data: HashMap::new(),
+            model: HashMap::new(),
         }
     }
 
@@ -165,7 +165,7 @@ impl Markov {
     pub fn learn_one(&mut self, text: &str) -> anyhow::Result<()> {
         let tokens = self.tokenize(text)?;
         for pair in tokens.windows(2) {
-            self.data
+            self.model
                 .entry(pair[0].clone())
                 .and_modify(|c| {
                     c.entry(pair[1].clone())
@@ -192,19 +192,19 @@ impl Markov {
     }
 
     #[must_use]
-    pub fn build(self) -> MarkovData {
-        self.data
+    pub fn build(self) -> MarkovModel {
+        self.model
     }
 }
 
-pub fn encode_model(model: MarkovData) -> anyhow::Result<Vec<u8>> {
+pub fn encode_model(model: MarkovModel) -> anyhow::Result<Vec<u8>> {
     let mut buf = Vec::new();
     bincode::encode_into_std_write(model, &mut buf, bincode::config::standard())
         .context("Failed to serialize the model")?;
     Ok(buf)
 }
 
-pub fn save_model<P: AsRef<Path>>(model: MarkovData, path: P) -> anyhow::Result<()> {
+pub fn save_model<P: AsRef<Path>>(model: MarkovModel, path: P) -> anyhow::Result<()> {
     let mut f = File::create(path).context("Failed to write into the file")?;
     bincode::encode_into_std_write(model, &mut f, bincode::config::standard())
         .context("Failed to write into the file")?;

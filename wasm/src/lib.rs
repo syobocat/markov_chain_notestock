@@ -1,18 +1,19 @@
 use std::sync::{LazyLock, Mutex};
 
-use markov_chain_notestock::markov::{Markov, MarkovModel};
+use markov_chain_notestock::markov::{MarkovBuilder, MarkovGenerator};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-static MODEL: LazyLock<Mutex<MarkovModel>> = LazyLock::new(|| Mutex::new(MarkovModel::new()));
+static MODEL: LazyLock<Mutex<MarkovGenerator>> =
+    LazyLock::new(|| Mutex::new(MarkovGenerator::new()));
 
 #[wasm_bindgen]
-pub struct MarkovWasm(Markov);
+pub struct MarkovWasm(MarkovBuilder);
 
 #[wasm_bindgen]
 impl MarkovWasm {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self(Markov::new().unwrap())
+        Self(MarkovBuilder::new().unwrap())
     }
 
     pub fn learn(&mut self, tar_zip: &[u8]) -> bool {
@@ -24,7 +25,7 @@ impl MarkovWasm {
     }
 
     pub fn build(self) {
-        MODEL.lock().unwrap().set_data(self.0.build());
+        MODEL.lock().unwrap().set_model(self.0.build());
     }
 }
 
@@ -56,7 +57,7 @@ pub fn download() -> Vec<u8> {
 
 #[wasm_bindgen]
 pub fn upload(data: &[u8]) -> String {
-    let model = match MarkovModel::from_bincode(data) {
+    let model = match MarkovGenerator::from_bincode(data) {
         Ok(model) => model,
         Err(e) => return e.to_string(),
     };
