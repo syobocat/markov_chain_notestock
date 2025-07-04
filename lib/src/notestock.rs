@@ -26,7 +26,7 @@ pub fn parse(data: &[u8]) -> anyhow::Result<Vec<String>> {
     Ok(texts)
 }
 
-fn extract(tar_zip: &[u8]) -> anyhow::Result<String> {
+fn extract(tar_zip: &[u8]) -> anyhow::Result<Vec<String>> {
     let tar_zip = Cursor::new(tar_zip);
     let mut tar_zip = ZipArchive::new(tar_zip).context("Failed to read zip file")?;
     if tar_zip.len() != 1 {
@@ -42,19 +42,17 @@ fn extract(tar_zip: &[u8]) -> anyhow::Result<String> {
         entry
             .read_to_string(&mut buf)
             .context("Failed to read tar file")?;
-        let mut json = buf.chars();
-        let _ = json.next();
-        let _ = json.next_back();
-        jsons.push(json.collect());
+        jsons.push(buf);
     }
-    let mut json = String::from("[");
-    json += &jsons.join(",");
-    json.push(']');
-    Ok(json)
+    Ok(jsons)
 }
 
-fn json_to_posts(json: &str) -> anyhow::Result<Vec<Post>> {
-    serde_json::from_str(json).context("Failed to parse json")
+fn json_to_posts(jsons: &Vec<String>) -> anyhow::Result<Vec<Post>> {
+    let mut posts: Vec<Post> = Vec::new();
+    for json in jsons {
+        posts.push(serde_json::from_str(json).context("Failed to parse json")?);
+    }
+    Ok(posts)
 }
 
 fn posts_to_texts(posts: &[Post]) -> Vec<String> {
