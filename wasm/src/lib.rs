@@ -56,11 +56,10 @@ pub fn download() -> Vec<u8> {
 }
 
 #[wasm_bindgen]
-pub fn upload(data: &[u8]) -> String {
-    let model = match MarkovGenerator::from_bincode(data) {
-        Ok(model) => model,
-        Err(e) => return e.to_string(),
+pub fn upload(data: &[u8]) -> bool {
+    let Ok(model) = MarkovGenerator::from_bincode(data) else {
+        return false;
     };
     *MODEL.lock().unwrap() = model;
-    String::from("Model loaded")
+    true
 }

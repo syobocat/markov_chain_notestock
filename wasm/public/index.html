@@ -199,7 +199,7 @@
 
             downloadButton.addEventListener("click", () => {
                 const bytes = download();
-                const blob = new Blob(bytes);
+                const blob = new Blob([bytes]);
                 const url = window.URL.createObjectURL(blob);
                 Object.assign(document.createElement("a"), {
                     href: url,
