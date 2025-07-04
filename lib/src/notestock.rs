@@ -22,7 +22,7 @@ pub fn parse_file<P: AsRef<Path>>(tar_zip: P) -> anyhow::Result<Vec<String>> {
 pub fn parse(data: &[u8]) -> anyhow::Result<Vec<String>> {
     let json = extract(data)?;
     let posts = json_to_posts(&json)?;
-    let texts = posts_to_texts(posts);
+    let texts = posts_to_texts(&posts);
     Ok(texts)
 }
 
@@ -52,12 +52,11 @@ fn json_to_posts(json: &str) -> anyhow::Result<Vec<Post>> {
     serde_json::from_str(json).context("Failed to parse json")
 }
 
-fn posts_to_texts(posts: Vec<Post>) -> Vec<String> {
+fn posts_to_texts(posts: &[Post]) -> Vec<String> {
     posts
         .iter()
         .filter(|p| filter(&p.content))
-        .map(|p| html_to_text(&p.content))
-        .flatten()
+        .flat_map(|p| html_to_text(&p.content))
         .collect()
 }
 
@@ -98,5 +97,8 @@ fn html_to_text(html: &str) -> Vec<String> {
     let sanitize_spaces = Regex::new(r"[ 　]+").unwrap();
     let text = sanitize_spaces.replace_all(&text, " ");
 
-    text.trim().lines().map(|s| s.to_owned()).collect()
+    text.trim()
+        .lines()
+        .map(std::borrow::ToOwned::to_owned)
+        .collect()
 }

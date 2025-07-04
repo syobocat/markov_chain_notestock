@@ -141,17 +141,16 @@ impl MarkovBuilder {
         }
     }
 
-    fn tokenize(&self, text: &str) -> anyhow::Result<Vec<Token>> {
+    fn tokenize(&self, text: &str) -> Vec<Token> {
         let tokenized = self.segmenter.segment(text);
-        let tokens = std::iter::once(Token::Bos)
-            .chain(tokenized.into_iter().map(|token| Token::Word(token)))
+        std::iter::once(Token::Bos)
+            .chain(tokenized.into_iter().map(Token::Word))
             .chain(std::iter::once(Token::Eos))
-            .collect();
-        Ok(tokens)
+            .collect()
     }
 
-    pub fn learn_one(&mut self, text: &str) -> anyhow::Result<()> {
-        let tokens = self.tokenize(text)?;
+    pub fn learn_one(&mut self, text: &str) {
+        let tokens = self.tokenize(text);
         for pair in tokens.windows(2) {
             self.model
                 .entry(pair[0].clone())
@@ -166,17 +165,12 @@ impl MarkovBuilder {
                     new
                 });
         }
-        Ok(())
     }
 
-    pub fn learn_many(&mut self, texts: &[String]) -> usize {
-        let mut failed = 0;
+    pub fn learn_many(&mut self, texts: &[String]) {
         for text in texts {
-            if self.learn_one(text).is_err() {
-                failed += 1;
-            }
+            self.learn_one(text);
         }
-        failed
     }
 
     #[must_use]
