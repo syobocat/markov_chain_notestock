@@ -108,6 +108,7 @@
                     placeholder="開始単語 (任意)"
                 />
                 <button id="generate" disabled>生成</button>
+                <button id="copy" disabled>コピー</button>
                 <div>
                     <textarea id="output" rows="10" readonly></textarea>
                     <p id="output_details"></p>
@@ -127,6 +128,7 @@
             const model = document.getElementById("model");
             const downloadButton = document.getElementById("download");
             const generateButton = document.getElementById("generate");
+            const copyButton = document.getElementById("copy");
             const startWith = document.getElementById("start_with");
             const output = document.getElementById("output");
             const outputDetails = document.getElementById("output_details");
@@ -136,6 +138,7 @@
             tarZip.addEventListener("change", async () => {
                 const markov = new MarkovWasm();
                 output.value = "処理中…";
+                copyButton.disabled = true;
                 for (let i = 0; i < tarZip.files.length; i++) {
                     const array = await tarZip.files[i].bytes();
                     if (!markov.learn(array)) {
@@ -153,6 +156,7 @@
             });
 
             model.addEventListener("change", () => {
+                copyButton.disabled = true;
                 tarzip.files[0].bytes().then((array) => {
                     if (upload(array)) {
                         generateButton.disabled = false;
@@ -169,16 +173,28 @@
 
             generateButton.addEventListener("click", () => {
                 if (!set_starting_word(startWith.value)) {
+                    copyButton.disabled = true;
                     output.value =
                         "その単語はモデル上に存在しません。別の単語でお試しください。";
                     return;
                 }
                 const tokens = generate();
+                copyButton.disabled = false;
                 output.value = tokens.join("");
                 outputDetails.innerHTML =
                     '<span class="token">' +
                     tokens.join('</span>→<span class="token">') +
                     "</span>";
+            });
+
+            copyButton.addEventListener("click", () => {
+                let copyText = output.value + "\n\n";
+                copyText += "#markov_chain_notestock\n";
+                if (startWith.value.length > 0) {
+                    copyText += "開始単語: " + startWith.value + "\n";
+                }
+                copyText += window.location.href;
+                navigator.clipboard.writeText(copyText);
             });
 
             downloadButton.addEventListener("click", () => {
