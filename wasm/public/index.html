@@ -157,7 +157,7 @@
 
             model.addEventListener("change", () => {
                 copyButton.disabled = true;
-                tarzip.files[0].bytes().then((array) => {
+                model.files[0].bytes().then((array) => {
                     if (upload(array)) {
                         generateButton.disabled = false;
                         downloadButton.disabled = false;
