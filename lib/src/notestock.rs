@@ -35,15 +35,20 @@ fn extract(tar_zip: &[u8]) -> anyhow::Result<String> {
     let tar = tar_zip.by_index(0).context("Failed to extract zip file")?;
     let mut tar = Archive::new(tar);
 
-    let mut json = String::new();
+    let mut jsons: Vec<String> = Vec::new();
     for entry in tar.entries().context("Failed to read tar file")? {
         let mut entry = entry.context("Failed to read tar file")?;
         let mut buf = String::new();
         entry
             .read_to_string(&mut buf)
             .context("Failed to read tar file")?;
-        json += &buf[0..buf.len() - 1];
+        let mut json = buf.chars();
+        let _ = json.next();
+        let _ = json.next_back();
+        jsons.push(json.collect());
     }
+    let mut json = String::from("[");
+    json += &jsons.join(",");
     json.push(']');
     Ok(json)
 }
