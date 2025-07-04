@@ -54,12 +54,30 @@ fn json_to_posts(json: &str) -> anyhow::Result<Vec<Post>> {
 
 fn posts_to_texts(posts: Vec<Post>) -> Vec<String> {
     posts
-        .into_iter()
-        .filter_map(|p| html_to_text(&p.content))
+        .iter()
+        .filter(|p| filter(&p.content))
+        .map(|p| html_to_text(&p.content))
+        .flatten()
         .collect()
 }
 
-fn html_to_text(html: &str) -> Option<String> {
+// 確定ゴミデータを消す
+// なんかもっといいかんじにしたい
+fn filter(html: &str) -> bool {
+    // Mondo
+    if html.contains("#クイズMondo") {
+        return false;
+    }
+
+    // puzzlega.me
+    if html.contains("https://puzzlega.me/") {
+        return false;
+    }
+
+    true
+}
+
+fn html_to_text(html: &str) -> Vec<String> {
     let remove_a_tag = Regex::new(r"<a[ >].*?</a>").unwrap();
     let html = remove_a_tag.replace_all(html, "");
 
@@ -80,12 +98,5 @@ fn html_to_text(html: &str) -> Option<String> {
     let sanitize_spaces = Regex::new(r"[ 　]+").unwrap();
     let text = sanitize_spaces.replace_all(&text, " ");
 
-    let remove_trailing_spaces = Regex::new(r"[[:space:]]+$").unwrap();
-    let text = remove_trailing_spaces.replace_all(&text, "");
-
-    if text.is_empty() {
-        None
-    } else {
-        Some(text.into_owned())
-    }
+    text.trim().lines().map(|s| s.to_owned()).collect()
 }
