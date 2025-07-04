@@ -42,6 +42,13 @@
             #output_details {
                 margin-top: 0;
                 width: 100%;
+                line-height: 5ex;
+            }
+            .token {
+                padding: 5px;
+                margin: 5px;
+                border: 1px solid;
+                border-radius: 10px;
             }
         </style>
     </head>
@@ -168,7 +175,10 @@
                 }
                 const tokens = generate();
                 output.value = tokens.join("");
-                outputDetails.innerHTML = "「" + tokens.join("」→「") + "」";
+                outputDetails.innerHTML =
+                    '<span class="token">' +
+                    tokens.join('</span>→<span class="token">') +
+                    "</span>";
             });
 
             downloadButton.addEventListener("click", () => {
