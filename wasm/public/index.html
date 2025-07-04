@@ -20,19 +20,20 @@
             .instruction {
                 margin: 0 10vw;
             }
-            .panel {
+            .main {
                 margin: 0 10vw;
                 padding: 1vw 10vw;
                 border: solid;
-
-                display: grid;
-                grid-template-columns: 50% 50%;
             }
-            .panel > div {
-                padding: 2em 0;
+            .panel {
+                display: grid;
+                margin-bottom: 2em;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2em;
+                justify-content: center;
             }
             .generate {
-                grid-column: 1 / 3;
+                grid-column-start: 2;
             }
             #output {
                 margin: 1em 0 0;
@@ -81,24 +82,26 @@
                 <li>いろんな文章を生成しよう！</li>
             </ol>
         </details>
-        <div class="panel">
-            <div class="learn">
-                <h2>学習</h2>
-                <input
-                    type="file"
-                    id="tarzip"
-                    class="file_select"
-                    accept="application/zip, application/x-zip-compressed"
-                    multiple
-                />
-            </div>
-            <div class="load">
-                <h2>モデル読み込み</h2>
-                <input type="file" id="model" class="file_select" />
-            </div>
-            <div>
-                <h2>モデルダウンロード</h2>
-                <button id="download" disabled>ダウンロード</button>
+        <div class="main">
+            <div class="panel">
+                <div class="learn">
+                    <h2>学習</h2>
+                    <input
+                        type="file"
+                        id="tarzip"
+                        class="file_select"
+                        accept="application/zip, application/x-zip-compressed"
+                        multiple
+                    />
+                </div>
+                <div class="load">
+                    <h2>モデル読み込み</h2>
+                    <input type="file" id="model" class="file_select" />
+                </div>
+                <div>
+                    <h2>モデルダウンロード</h2>
+                    <button id="download" disabled>ダウンロード</button>
+                </div>
             </div>
             <div class="generate">
                 <h2>生成</h2>
