@@ -99,6 +99,7 @@ fn html_to_text(html: &str) -> Vec<String> {
 
     text.trim()
         .lines()
+        .filter(|l| !l.starts_with("RE:")) // インライン引用を削除 (TODO: `QT: `とかの場合にも対応したい)
         .map(std::borrow::ToOwned::to_owned)
         .collect()
 }
