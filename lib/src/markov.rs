@@ -2,11 +2,13 @@ use std::{collections::HashMap, fs::File, path::Path};
 
 use anyhow::Context;
 use bincode::{Decode, Encode};
-use lindera::{dictionary::DictionaryKind, mode::Mode, segmenter::Segmenter, tokenizer::Tokenizer};
+use litsea::{adaboost::AdaBoost, segmenter::Segmenter};
 use rand::seq::IndexedRandom;
 
+const MODEL: &[u8] = include_bytes!("../assets/JEITA_Genpaku_ChaSen_IPAdic.model");
+
 pub struct MarkovBuilder {
-    tokenizer: Tokenizer,
+    segmenter: Segmenter,
     model: MarkovModel,
 }
 
@@ -126,39 +128,25 @@ impl MarkovGenerator {
 
 impl MarkovBuilder {
     pub fn new() -> anyhow::Result<Self> {
-        #[cfg(feature = "unidic")]
-        let dictionary_kind = DictionaryKind::UniDic;
-        #[cfg(feature = "neologd")]
-        let dictionary_kind = DictionaryKind::IPADICNEologd;
-
-        let dictionary = lindera::dictionary::load_dictionary_from_kind(dictionary_kind)
-            .context("Failed to load the dictionary")?;
-        let segmenter = Segmenter::new(Mode::Normal, dictionary, None);
-        let tokenizer = Tokenizer::new(segmenter);
-        Ok(Self::from_tokenizer(tokenizer))
+        let mut leaner = AdaBoost::new(0.01, 100, 1);
+        leaner.load_model_from_reader(MODEL).unwrap();
+        Ok(Self::from_segmenter(Segmenter::new(Some(leaner))))
     }
 
     #[must_use]
-    pub fn from_tokenizer(tokenizer: Tokenizer) -> Self {
+    pub fn from_segmenter(segmenter: Segmenter) -> Self {
         Self {
-            tokenizer,
+            segmenter,
             model: HashMap::new(),
         }
     }
 
     fn tokenize(&self, text: &str) -> anyhow::Result<Vec<Token>> {
-        let tokenized = self
-            .tokenizer
-            .tokenize(text)
-            .context("Failed to tokenize")?;
-        let mut tokenized: Vec<Token> = tokenized
-            .into_iter()
-            .map(|token| Token::Word(token.text.into_owned()))
+        let tokenized = self.segmenter.segment(text);
+        let tokens = std::iter::once(Token::Bos)
+            .chain(tokenized.into_iter().map(|token| Token::Word(token)))
+            .chain(std::iter::once(Token::Eos))
             .collect();
-        let mut tokens: Vec<Token> = Vec::new();
-        tokens.push(Token::Bos);
-        tokens.append(&mut tokenized);
-        tokens.push(Token::Eos);
         Ok(tokens)
     }
 
