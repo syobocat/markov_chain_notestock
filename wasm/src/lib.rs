@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 SyoBoN <syobon@syobon.net>
+ *
+ * SPDX-License-Identifier: UPL-1.0
+ */
+
 use std::sync::{LazyLock, Mutex};
 
 use markov_chain_notestock::markov::{MarkovBuilder, MarkovGenerator};

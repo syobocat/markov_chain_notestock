@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2025 SyoBoN <syobon@syobon.net>
+ *
+ * SPDX-License-Identifier: UPL-1.0
+ */
+
 use std::{collections::HashMap, fs::File, path::Path};
 
 use anyhow::Context;
