@@ -76,6 +76,14 @@ fn filter(html: &str) -> bool {
         return false;
     }
 
+    // 二重学習禁止
+    if html.contains("#markov-generator-fedi") {
+        return false;
+    }
+    if html.contains("#fedi_markov_chain_wasm") {
+        return false;
+    }
+
     true
 }
 
