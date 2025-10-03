@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: None
+#
+# SPDX-License-Identifier: CC0-1.0
+
 name = "markov-chain-notestock"
 compatibility_date = "2025-10-03"
 
