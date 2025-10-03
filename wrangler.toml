@@ -1,0 +1,6 @@
+name = "markov_chain_notestock"
+compatibility_date = "2025-10-03"
+
+[assets]
+directory = "./wasm/public"
+not_found_handling = "404-page"
