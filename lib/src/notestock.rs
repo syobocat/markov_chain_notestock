@@ -56,7 +56,8 @@ fn extract(tar_zip: &[u8]) -> anyhow::Result<Vec<String>> {
 fn json_to_posts(jsons: &Vec<String>) -> anyhow::Result<Vec<Post>> {
     let mut posts: Vec<Post> = Vec::new();
     for json in jsons {
-        posts.push(serde_json::from_str(json).context("Failed to parse json")?);
+        let mut _posts: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;
+        posts.append(&mut _posts);
     }
     Ok(posts)
 }
@@ -119,4 +120,17 @@ fn html_to_text(html: &str) -> Vec<String> {
         .filter(|l| !l.starts_with("RE:")) // インライン引用を削除 (TODO: `QT: `とかの場合にも対応したい)
         .map(std::borrow::ToOwned::to_owned)
         .collect()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // 自前で用意
+    const TAR_ZIP: &[u8] = include_bytes!("test.tar.zip");
+
+    #[test]
+    fn test_parse() {
+        parse(TAR_ZIP).unwrap();
+    }
 }
