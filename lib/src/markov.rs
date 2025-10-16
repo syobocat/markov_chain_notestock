@@ -135,7 +135,7 @@ impl MarkovGenerator {
 impl MarkovBuilder {
     pub fn new() -> anyhow::Result<Self> {
         let mut leaner = AdaBoost::new(0.01, 100, 1);
-        leaner.load_model_from_reader(MODEL).unwrap();
+        leaner.parse_model_content(MODEL).unwrap();
         Ok(Self::from_segmenter(Segmenter::new(Some(leaner))))
     }
 

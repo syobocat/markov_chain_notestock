@@ -7,7 +7,7 @@ resolver = "3"
 members = ["lib", "wasm"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 authors = ["SyoBoN"]
 edition = "2024"
 license = "UPL-1.0"
