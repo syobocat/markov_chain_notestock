@@ -19,7 +19,7 @@ pub struct MarkovWasm(MarkovBuilder);
 impl MarkovWasm {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self(MarkovBuilder::new().unwrap())
+        Self(MarkovBuilder::new())
     }
 
     pub fn learn(&mut self, tar_zip: &[u8]) -> bool {
@@ -58,7 +58,7 @@ pub fn download() -> Vec<u8> {
     let Some(model) = MODEL.lock().unwrap().get_data() else {
         return Vec::new();
     };
-    markov_chain_notestock::markov::encode_model(model).unwrap_or_default()
+    markov_chain_notestock::markov::encode_model(&model).unwrap_or_default()
 }
 
 #[wasm_bindgen]

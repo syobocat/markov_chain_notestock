@@ -4,12 +4,17 @@
  * SPDX-License-Identifier: UPL-1.0
  */
 
-use std::{collections::HashMap, fs::File, path::Path};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{Read, Write},
+    path::Path,
+};
 
 use anyhow::Context;
-use bincode::{Decode, Encode};
 use litsea::{adaboost::AdaBoost, segmenter::Segmenter};
 use rand::seq::IndexedRandom;
+use rkyv::{Archive, Deserialize, Serialize, rancor};
 
 const MODEL: &[u8] = include_bytes!("../assets/JEITA_Genpaku_ChaSen_IPAdic.model");
 
@@ -25,7 +30,8 @@ pub struct MarkovGenerator {
 
 pub type MarkovModel = HashMap<Token, HashMap<Token, u32>>;
 
-#[derive(Clone, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Archive, Deserialize, Serialize)]
+#[rkyv(compare(PartialEq), derive(Hash, PartialEq, Eq))]
 pub enum Token {
     Bos,
     Word(String),
@@ -55,9 +61,9 @@ impl MarkovGenerator {
         }
     }
 
-    pub fn from_bincode(mut data: &[u8]) -> anyhow::Result<Self> {
-        let data = bincode::decode_from_std_read(&mut data, bincode::config::standard())
-            .context("Failed to decode the file")?;
+    pub fn from_bincode(data: &[u8]) -> anyhow::Result<Self> {
+        let data =
+            rkyv::from_bytes::<_, rancor::Error>(data).context("Failed to decode the file")?;
         Ok(Self {
             current: Token::Bos,
             model: Some(data),
@@ -66,8 +72,10 @@ impl MarkovGenerator {
 
     pub fn from_file<P: AsRef<Path>>(f: P) -> anyhow::Result<Self> {
         let mut f = File::open(f).context("Failed to open the file")?;
-        let data = bincode::decode_from_std_read(&mut f, bincode::config::standard())
-            .context("Failed to decode the file")?;
+        let mut buf = Vec::new();
+        f.read(&mut buf).context("Failed to read the file")?;
+        let data =
+            rkyv::from_bytes::<_, rancor::Error>(&buf).context("Failed to decode the file")?;
         Ok(Self {
             current: Token::Bos,
             model: Some(data),
@@ -133,10 +141,10 @@ impl MarkovGenerator {
 }
 
 impl MarkovBuilder {
-    pub fn new() -> anyhow::Result<Self> {
+    pub fn new() -> Self {
         let mut leaner = AdaBoost::new(0.01, 100, 1);
         leaner.parse_model_content(MODEL).unwrap();
-        Ok(Self::from_segmenter(Segmenter::new(Some(leaner))))
+        Self::from_segmenter(Segmenter::new(Some(leaner)))
     }
 
     #[must_use]
@@ -185,16 +193,38 @@ impl MarkovBuilder {
     }
 }
 
-pub fn encode_model(model: MarkovModel) -> anyhow::Result<Vec<u8>> {
-    let mut buf = Vec::new();
-    bincode::encode_into_std_write(model, &mut buf, bincode::config::standard())
-        .context("Failed to serialize the model")?;
-    Ok(buf)
+pub fn encode_model(model: &MarkovModel) -> anyhow::Result<Vec<u8>> {
+    let data = rkyv::to_bytes::<rancor::Error>(model).context("Failed to serialize the model")?;
+    Ok(data.into_vec())
 }
 
-pub fn save_model<P: AsRef<Path>>(model: MarkovModel, path: P) -> anyhow::Result<()> {
+pub fn save_model<P: AsRef<Path>>(model: &MarkovModel, path: P) -> anyhow::Result<()> {
+    let data = rkyv::to_bytes::<rancor::Error>(model).context("Failed to serialize the model")?;
+
     let mut f = File::create(path).context("Failed to write into the file")?;
-    bincode::encode_into_std_write(model, &mut f, bincode::config::standard())
+    f.write(data.as_slice())
         .context("Failed to write into the file")?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_serde() {
+        let mut builder = MarkovBuilder::new();
+        builder.learn_one("これはサンプルです。");
+        builder.learn_one("これもまたサンプルです。");
+        let model = builder.build();
+
+        let archived = encode_model(&model).unwrap();
+
+        let restored = MarkovGenerator::from_bincode(&archived)
+            .unwrap()
+            .model
+            .unwrap();
+
+        assert_eq!(model, restored);
+    }
 }
