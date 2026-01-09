@@ -12,7 +12,6 @@ use std::{
 use anyhow::Context;
 use regex::Regex;
 use serde::Deserialize;
-use tar::Archive;
 use zip::ZipArchive;
 
 #[derive(Deserialize)]
@@ -32,24 +31,20 @@ pub fn parse(data: &[u8]) -> anyhow::Result<Vec<String>> {
     Ok(texts)
 }
 
-fn extract(tar_zip: &[u8]) -> anyhow::Result<Vec<String>> {
-    let tar_zip = Cursor::new(tar_zip);
-    let mut tar_zip = ZipArchive::new(tar_zip).context("Failed to read zip file")?;
-    if tar_zip.len() != 1 {
-        anyhow::bail!("Zip downloaded from Notestock should have only 1 file");
-    }
-    let tar = tar_zip.by_index(0).context("Failed to extract zip file")?;
-    let mut tar = Archive::new(tar);
+fn extract(zip: &[u8]) -> anyhow::Result<Vec<String>> {
+    let zip = Cursor::new(zip);
+    let mut zip = ZipArchive::new(zip).context("Failed to read zip file")?;
 
     let mut jsons: Vec<String> = Vec::new();
-    for entry in tar.entries().context("Failed to read tar file")? {
-        let mut entry = entry.context("Failed to read tar file")?;
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i).context("Failed to extract zip file")?;
         let mut buf = String::new();
         entry
             .read_to_string(&mut buf)
-            .context("Failed to read tar file")?;
+            .context("Failed to read from zip file")?;
         jsons.push(buf);
     }
+
     Ok(jsons)
 }
 
@@ -127,10 +122,10 @@ mod test {
     use super::*;
 
     // 自前で用意
-    const TAR_ZIP: &[u8] = include_bytes!("test.tar.zip");
+    const ZIP: &[u8] = include_bytes!("test.zip");
 
     #[test]
     fn test_parse() {
-        parse(TAR_ZIP).unwrap();
+        parse(ZIP).unwrap();
     }
 }
