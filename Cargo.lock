@@ -709,7 +709,7 @@ checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
 name = "markov_chain_notestock"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "litsea",
@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "markov_chain_notestock_wasm"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "getrandom 0.4.1",
  "markov_chain_notestock",

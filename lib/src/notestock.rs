@@ -51,8 +51,8 @@ fn extract(zip: &[u8]) -> anyhow::Result<Vec<String>> {
 fn unwrap_htmls_from_json(jsons: &Vec<String>) -> anyhow::Result<Vec<String>> {
     let mut posts: Vec<String> = Vec::new();
     for json in jsons {
-        let _posts: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;
-        posts.extend(_posts.into_iter().filter_map(|p| p.content));
+        let p: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;
+        posts.extend(p.into_iter().filter_map(|p| p.content));
     }
     Ok(posts)
 }
@@ -60,8 +60,8 @@ fn unwrap_htmls_from_json(jsons: &Vec<String>) -> anyhow::Result<Vec<String>> {
 fn htmls_to_texts(posts: &[String]) -> Vec<String> {
     posts
         .iter()
-        .filter(|p| filter(&p))
-        .flat_map(|p| html_to_text(&p))
+        .filter(|p| filter(p))
+        .flat_map(|p| html_to_text(p))
         .collect()
 }
 

@@ -4,12 +4,7 @@
  * SPDX-License-Identifier: UPL-1.0
  */
 
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{Read, Write},
-    path::Path,
-};
+use std::{collections::HashMap, fs::File, io::Write, path::Path};
 
 use anyhow::Context;
 use litsea::{adaboost::AdaBoost, language::Language, segmenter::Segmenter};
@@ -71,15 +66,8 @@ impl MarkovGenerator {
     }
 
     pub fn from_file<P: AsRef<Path>>(f: P) -> anyhow::Result<Self> {
-        let mut f = File::open(f).context("Failed to open the file")?;
-        let mut buf = Vec::new();
-        f.read(&mut buf).context("Failed to read the file")?;
-        let data =
-            rkyv::from_bytes::<_, rancor::Error>(&buf).context("Failed to decode the file")?;
-        Ok(Self {
-            current: Token::Bos,
-            model: Some(data),
-        })
+        let data = std::fs::read(f).context("Failed to open the file")?;
+        Self::from_bincode(&data)
     }
 
     pub fn set_model(&mut self, model: MarkovModel) {
