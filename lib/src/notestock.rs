@@ -16,7 +16,7 @@ use zip::ZipArchive;
 
 #[derive(Deserialize)]
 struct Post {
-    content: String,
+    content: Option<String>,
 }
 
 pub fn parse_file<P: AsRef<Path>>(tar_zip: P) -> anyhow::Result<Vec<String>> {
@@ -26,8 +26,8 @@ pub fn parse_file<P: AsRef<Path>>(tar_zip: P) -> anyhow::Result<Vec<String>> {
 
 pub fn parse(data: &[u8]) -> anyhow::Result<Vec<String>> {
     let json = extract(data)?;
-    let posts = json_to_posts(&json)?;
-    let texts = posts_to_texts(&posts);
+    let posts = unwrap_htmls_from_json(&json)?;
+    let texts = htmls_to_texts(&posts);
     Ok(texts)
 }
 
@@ -48,20 +48,20 @@ fn extract(zip: &[u8]) -> anyhow::Result<Vec<String>> {
     Ok(jsons)
 }
 
-fn json_to_posts(jsons: &Vec<String>) -> anyhow::Result<Vec<Post>> {
-    let mut posts: Vec<Post> = Vec::new();
+fn unwrap_htmls_from_json(jsons: &Vec<String>) -> anyhow::Result<Vec<String>> {
+    let mut posts: Vec<String> = Vec::new();
     for json in jsons {
-        let mut _posts: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;
-        posts.append(&mut _posts);
+        let _posts: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;
+        posts.extend(_posts.into_iter().filter_map(|p| p.content));
     }
     Ok(posts)
 }
 
-fn posts_to_texts(posts: &[Post]) -> Vec<String> {
+fn htmls_to_texts(posts: &[String]) -> Vec<String> {
     posts
         .iter()
-        .filter(|p| filter(&p.content))
-        .flat_map(|p| html_to_text(&p.content))
+        .filter(|p| filter(&p))
+        .flat_map(|p| html_to_text(&p))
         .collect()
 }
 
