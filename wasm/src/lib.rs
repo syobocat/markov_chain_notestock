@@ -4,13 +4,12 @@
  * SPDX-License-Identifier: UPL-1.0
  */
 
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
 
 use markov_chain_notestock::markov::{MarkovBuilder, MarkovGenerator};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-static MODEL: LazyLock<Mutex<MarkovGenerator>> =
-    LazyLock::new(|| Mutex::new(MarkovGenerator::new()));
+static MODEL: Mutex<MarkovGenerator> = Mutex::new(MarkovGenerator::new());
 
 #[wasm_bindgen]
 pub struct MarkovWasm(MarkovBuilder);
