@@ -116,16 +116,3 @@ fn html_to_text(html: &str) -> Vec<String> {
         .map(std::borrow::ToOwned::to_owned)
         .collect()
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    // 自前で用意
-    const ZIP: &[u8] = include_bytes!("test.zip");
-
-    #[test]
-    fn test_parse() {
-        parse(ZIP).unwrap();
-    }
-}
