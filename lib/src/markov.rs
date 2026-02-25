@@ -148,7 +148,7 @@ impl MarkovBuilder {
         let tokenized = self.segmenter.segment(text);
         let tokens = tokenized
             .into_iter()
-            .map(|s| Token::Word(s.into()))
+            .map(Token::Word)
             .chain(std::iter::once(Token::Eos));
 
         let mut prev = Token::Bos;
