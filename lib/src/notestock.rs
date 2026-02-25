@@ -78,6 +78,16 @@ fn filter(html: &str) -> bool {
         return false;
     }
 
+    // Daily Akari
+    if html.contains("https://dailyakari.com/") {
+        return false;
+    }
+
+    // Daily Alpaca Hack
+    if html.contains("https://alpacahack.com/daily") {
+        return false;
+    }
+
     // 二重学習禁止
     if html.contains("#markov-generator-fedi") {
         return false;
