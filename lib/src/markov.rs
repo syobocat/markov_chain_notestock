@@ -12,7 +12,7 @@ use std::{
 };
 
 use anyhow::Context;
-use litsea::{adaboost::AdaBoost, segmenter::Segmenter};
+use litsea::{adaboost::AdaBoost, language::Language, segmenter::Segmenter};
 use rand::seq::IndexedRandom;
 use rkyv::{Archive, Deserialize, Serialize, rancor};
 
@@ -144,7 +144,7 @@ impl MarkovBuilder {
     pub fn new() -> Self {
         let mut leaner = AdaBoost::new(0.01, 100, 1);
         leaner.parse_model_content(MODEL).unwrap();
-        Self::from_segmenter(Segmenter::new(Some(leaner)))
+        Self::from_segmenter(Segmenter::new(Language::Japanese, Some(leaner)))
     }
 
     #[must_use]
