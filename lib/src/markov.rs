@@ -129,7 +129,14 @@ impl MarkovGenerator {
     }
 }
 
+impl Default for MarkovBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MarkovBuilder {
+    #[must_use]
     pub fn new() -> Self {
         let mut leaner = AdaBoost::new(0.01, 100, 1);
         leaner.parse_model_content(MODEL).unwrap();

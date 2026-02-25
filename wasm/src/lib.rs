@@ -12,11 +12,13 @@ use wasm_bindgen::prelude::wasm_bindgen;
 static MODEL: Mutex<MarkovGenerator> = Mutex::new(MarkovGenerator::new());
 
 #[wasm_bindgen]
+#[derive(Default)]
 pub struct MarkovWasm(MarkovBuilder);
 
 #[wasm_bindgen]
 impl MarkovWasm {
     #[wasm_bindgen(constructor)]
+    #[must_use]
     pub fn new() -> Self {
         Self(MarkovBuilder::new())
     }
