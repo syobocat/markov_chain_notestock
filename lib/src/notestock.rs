@@ -48,7 +48,7 @@ fn extract(zip: &[u8]) -> anyhow::Result<Vec<String>> {
     Ok(jsons)
 }
 
-fn unwrap_htmls_from_json(jsons: &Vec<String>) -> anyhow::Result<Vec<String>> {
+fn unwrap_htmls_from_json(jsons: &[String]) -> anyhow::Result<Vec<String>> {
     let mut posts: Vec<String> = Vec::new();
     for json in jsons {
         let p: Vec<Post> = serde_json::from_str(json).context("Failed to parse json")?;

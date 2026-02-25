@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: UPL-1.0
  */
 
-use std::{collections::HashMap, fs::File, io::Write, path::Path};
+use std::{fs::File, io::Write, path::Path};
 
 use anyhow::Context;
+use fxhash::FxHashMap;
 use litsea::{adaboost::AdaBoost, language::Language, segmenter::Segmenter};
 use rand::seq::IndexedRandom;
 use rkyv::{Archive, Deserialize, Serialize, rancor};
@@ -23,7 +24,7 @@ pub struct MarkovGenerator {
     model: Option<MarkovModel>,
 }
 
-pub type MarkovModel = HashMap<Token, HashMap<Token, u32>>;
+pub type MarkovModel = FxHashMap<Token, FxHashMap<Token, u32>>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Archive, Deserialize, Serialize)]
 #[rkyv(compare(PartialEq), derive(Hash, PartialEq, Eq))]
@@ -139,33 +140,32 @@ impl MarkovBuilder {
     pub fn from_segmenter(segmenter: Segmenter) -> Self {
         Self {
             segmenter,
-            model: HashMap::new(),
+            model: FxHashMap::default(),
         }
     }
 
-    fn tokenize(&self, text: &str) -> Vec<Token> {
-        let tokenized = self.segmenter.segment(text);
-        std::iter::once(Token::Bos)
-            .chain(tokenized.into_iter().map(Token::Word))
-            .chain(std::iter::once(Token::Eos))
-            .collect()
-    }
-
     pub fn learn_one(&mut self, text: &str) {
-        let tokens = self.tokenize(text);
-        for pair in tokens.windows(2) {
-            self.model
-                .entry(pair[0].clone())
-                .and_modify(|c| {
-                    c.entry(pair[1].clone())
-                        .and_modify(|c| *c += 1)
-                        .or_insert(1);
-                })
-                .or_insert_with(|| {
-                    let mut new = HashMap::new();
-                    new.insert(pair[1].clone(), 1);
-                    new
-                });
+        let tokenized = self.segmenter.segment(text);
+        let tokens = tokenized
+            .into_iter()
+            .map(|s| Token::Word(s.into()))
+            .chain(std::iter::once(Token::Eos));
+
+        let mut prev = Token::Bos;
+        for token in tokens {
+            if let Some(c1) = self.model.get_mut(&prev) {
+                if let Some(c2) = c1.get_mut(&token) {
+                    *c2 += 1;
+                } else {
+                    c1.insert(token.clone(), 1);
+                }
+            } else {
+                let mut new = FxHashMap::default();
+                new.insert(token.clone(), 1);
+                self.model.insert(prev.clone(), new);
+            }
+
+            prev = token;
         }
     }
 
